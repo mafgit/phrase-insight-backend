@@ -52,6 +52,8 @@ def chat():
     else:
       client2 = client1
 
+    text = text[0:270]
+
     prompt = create_prompt(
                 phrase,
                 text,
@@ -98,7 +100,7 @@ def create_prompt(phrase, text, speaking='English', learning='Arabic', grammar=F
     prompt += f"\nThen give grammatical analysis of this phrase in {learning} technical/grammatical terms."
   
   if examples:
-    prompt += f'\nThen give two examples of using this phrase in {learning} along with translation in {speaking}.'
+    prompt += f'\nThen give two examples of using this phrase in other {learning} sentences along with translation in {speaking}.'
     
   prompt += f'\nDo not use extra words like let me know if you need help.\nAssume I only know {speaking} so give response to the above questions using {speaking} language!'
 #   {f' except when doing grammatical analysis which should be done in {learning}' if grammar else ''}
