@@ -13,7 +13,7 @@ CORS(app)
 load_dotenv()
 debug = os.getenv('FLASK_DEBUG') == 'TRUE'
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
-client = Groq(api_key=GROQ_API_KEY)
+client1 = Groq(api_key=GROQ_API_KEY)
 # MODEL                     RPM RPD     TPM     TPD
 # llama-3.1-8b-instant	    30	14,400	6,000	500,000
 # llama3-70b-8192	        30	14,400	6,000	500,000
@@ -40,10 +40,17 @@ def chat():
     context = data.get('context') or False
     examples = data.get('examples') or False
 
+    apikey = data.get('apikey')
+
     model = data.get('model') or 'llama3-70b-8192'
 
     if not data or not phrase or not text or not speaking or not learning or phrase.strip() == '' or text.strip() == '':
         return jsonify({ "error": "Phrase and text not provided" }), 400
+
+    if apikey:
+      client2 = Groq(api_key=apikey)
+    else:
+      client2 = client1
 
     prompt = create_prompt(
                 phrase,
@@ -59,7 +66,7 @@ def chat():
         print('\n\nPrompt:', prompt)
         print('Model:', model, '\n\n')
 
-    chat_completions = client.chat.completions.create(
+    chat_completions = client2.chat.completions.create(
         messages=[
             {
                 "role": "system", 
