@@ -91,7 +91,7 @@ def chat():
     return jsonify({ "answer": answer })
 
 def create_prompt(phrase, text, speaking='English', learning='Arabic', grammar=False, context=False, examples=False):
-  prompt = f'Give exact translation of the phrase \'{phrase}\' in the context of the following text: \'{text}\''
+  prompt = f'Give exact translation of the phrase \'{phrase}\' in the context of the following text: \'...{text}...\''
 
   if context:
     prompt += f'\n\nThen give short information in {speaking} about the context in which this phrase is being used.'
