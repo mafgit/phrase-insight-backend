@@ -14,10 +14,14 @@ load_dotenv()
 debug = os.getenv('FLASK_DEBUG') == 'TRUE'
 GROQ_API_KEY = os.getenv('GROQ_API_KEY')
 client1 = Groq(api_key=GROQ_API_KEY)
-# MODEL                     RPM RPD     TPM     TPD
-# llama-3.1-8b-instant	    30	14,400	6,000	500,000
-# llama3-70b-8192	        30	14,400	6,000	500,000
-# mixtral-8x7b-32768	    30	14,400	5,000	500,000
+# MODEL                           RPM   RPD       TPM     TPD
+# llama-3.1-8b-instant	          30    14,400	  6,000	  500,000
+# llama3-70b-8192	                30	  14,400	  6,000	  500,000
+# mixtral-8x7b-32768	            30	  14,400	  5,000 	500,000
+# mistral-saba-24b	              30	  1,000     6,000	  500,000
+# deepseek-r1-distill-llama-70b	  30	  1,000	    6,000	  (No limit)
+# gemma2-9b-it	                  30	  14,400	  15,000  500,000
+# llama-3.3-70b-versatile	        30  	1,000 	  6,000	  100,000
 # https://console.groq.com/keys
 
 @app.route('/', methods=['GET'])
@@ -72,7 +76,7 @@ def chat():
         messages=[
             {
                 "role": "system", 
-                "content": f"You are a helpful {learning} language teaching assistant. Assume that you are teaching to a {speaking} speaker! Your answers must be shorter than 150 words!" 
+                "content": f"You are an expert {learning} language linguist and translator. Assume that you are teaching to a {speaking} speaker! Your answers must be short and to the point without using extra words and repetitions!" 
             },
             { 
                 "role": "user",
@@ -97,12 +101,14 @@ def create_prompt(phrase, text, speaking='English', learning='Arabic', grammar=F
     prompt += f'\n\nThen give short information in {speaking} about the context in which this phrase is being used.'
     
   if grammar:
-    prompt += f"\nThen give grammatical analysis of this phrase in {learning} technical/grammatical terms."
+    prompt += f"\nThen give grammatical analysis of this phrase in the text using only {learning} terms."
+    if len(phrase.split()) == 1:
+       prompt += f"\nGive all forms of this word (such as singular/plural form and base form in case of verb) and its pronunciation."
   
   if examples:
-    prompt += f'\nThen give two examples of using this phrase in other {learning} sentences along with translation in {speaking}.'
+    prompt += f'\nThen give two examples of using such a phrase in other {learning} sentences along with translation in {speaking}.'
     
-  prompt += f'\nDo not use extra words like let me know if you need help.\nAssume I only know {speaking} so give response to the above questions using {speaking} language!'
+  prompt += f'\nAssume I only know {speaking} so give response to the above questions using {speaking} language!'
 #   {f' except when doing grammatical analysis which should be done in {learning}' if grammar else ''}
   
   return prompt
