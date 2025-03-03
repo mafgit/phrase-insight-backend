@@ -24,6 +24,13 @@ client1 = Groq(api_key=GROQ_API_KEY)
 # llama-3.3-70b-versatile	        30  	1,000 	  6,000	  100,000
 # https://console.groq.com/keys
 
+settings = {
+  "translation": {"temperature": 0.2, "max_completion_tokens": 100},
+  "grammar": {"temperature": 0.2, "max_completion_tokens": 250},
+  "context": {"temperature": 0.3, "max_completion_tokens": 150},
+  "examples": {"temperature": 0.5, "max_completion_tokens": 100},
+}
+
 @app.route('/', methods=['GET'])
 def welcome():
     return jsonify({ "message": "Welcome to PhraseInsight API!" })
@@ -40,9 +47,7 @@ def chat():
     speaking = data.get('speaking')
     learning = data.get('learning')
     
-    grammar = data.get('grammar') or False
-    context = data.get('context') or False
-    examples = data.get('examples') or False
+    request_type = data.get('request_type') or 'translation'
 
     apikey = data.get('apikey')
 
@@ -59,15 +64,14 @@ def chat():
     text = text[0:270]
 
     prompt = create_prompt(
-                phrase,
-                text,
-                speaking=speaking,
-                learning=learning,
-                context=context,
-                grammar=grammar,
-                examples=examples,
-            )
+            phrase,
+            text,
+            speaking=speaking,
+            learning=learning,
+            request_type=request_type
+          )
     
+
     if debug:
         print('\n\nPrompt:', prompt)
         print('Model:', model, '\n\n')
@@ -76,41 +80,40 @@ def chat():
         messages=[
             {
                 "role": "system", 
-                "content": f"You are an expert {learning} language linguist and translator. Assume that you are teaching to a {speaking} speaker! Your answers must be short and to the point without using extra words and repetitions!" 
-            },
-            { 
-                "role": "user",
                 "content": prompt
-            },
+            }
         ],
         model=model,
-        # max tokens, temp, etc
+        temperature=settings[request_type]['temperature'],
+        max_completion_tokens=settings[request_type]['max_completion_tokens'],
+        frequency_penalty=0.2
     )
 
     answer = chat_completions.choices[0].message.content
+    if debug:
+        print('\n\nAnswer:', answer, '\n\n')
     answer = markdown.markdown(answer)
-    # if debug:
-    #     print('\n\nAnswer:', answer, '\n\n')
 
     return jsonify({ "answer": answer })
 
-def create_prompt(phrase, text, speaking='English', learning='Arabic', grammar=False, context=False, examples=False):
-  prompt = f'Give exact translation of the phrase \'{phrase}\' in the context of the following text: \'...{text}...\''
+def create_prompt(phrase, text, speaking='English', learning='Arabic', request_type='translation'):
+  prompt = f"""
+User speaks: {speaking}
+User is learning: {learning}
+Context: "...{text}..."
+"""
 
-  if context:
-    prompt += f'\n\nThen give short information in {speaking} about the context in which this phrase is being used.'
-    
-  if grammar:
-    prompt += f"\nThen give grammatical analysis of this phrase in the text using only {learning} terms."
-    if len(phrase.split()) == 1:
-       prompt += f"\nGive all forms of this word (such as singular/plural form and base form in case of verb) and its pronunciation."
-  
-  if examples:
-    prompt += f'\nThen give two examples of using such a phrase in other {learning} sentences along with translation in {speaking}.'
-    
-  prompt += f'\nAssume I only know {speaking} so give response to the above questions using {speaking} language!'
-#   {f' except when doing grammatical analysis which should be done in {learning}' if grammar else ''}
-  
+  if request_type == 'translation':
+    prompt += f'\nProvide only the exact translation and pronunciation of phrase in {speaking}.'
+  elif request_type == 'grammar':
+    prompt += f'\nGive very concise grammar and structure analysis of just the phrase in {learning}. Give plural/singular if noun and past/present form if verb too.'
+  elif request_type == 'context':
+    prompt += f'\nGive brief contextual explanation of phrase in {speaking}.'
+  elif request_type == 'examples':
+    prompt += f'\nProvide two other example sentences in {learning} along with translation in {speaking}.'
+  else:
+    raise ValueError(f"Invalid request type: {request_type}")
+
   return prompt
 
 if __name__ == '__main__':
